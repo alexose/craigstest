@@ -1,0 +1,123 @@
+<html>
+<head>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript"></script>
+<script type="text/javascript">
+    
+    var proxyUrl = "proxy.php";
+    var currentPage = 0;
+    var links = [];
+
+    $(document).ready(function(){
+        pageWidth = $(window).innerWidth();
+        pageHeight = $(window).innerHeight();
+        cellWidth = $('#list div.first').outerWidth() + 5; // padding
+        cellHeight = $('#list div.first').outerHeight() + 5;
+
+        // How many rows and columns?
+        rows = Math.round(pageWidth / cellWidth);
+        cols = Math.round(pageHeight/ cellHeight); 
+
+        // 100 Results per page
+        loadPage(currentPage);
+
+        $(window).resize(function(){
+        });
+    });
+
+    function loadPage(pageNum){
+        index = (pageNum == 0) ? "" : pageNum * 100;
+        $('#list .image.moar').remove();
+        $.ajax({
+            url: proxyUrl + '?url=http://boston.craigslist.org/bia/index' + index + '.html',
+            type: "GET",
+            dataType: "xml",
+            success: parseResults
+        })
+    }
+
+    function parseResults(xml){
+        $(xml).find("description").each(function(){
+            url = $(this).prev().text();
+            raw = $(this).text();
+            markup = "<div>" + $.trim(raw) + "</div>";
+            $(markup).find('img').each(function(){
+                links.push({
+                    'id': 0, 
+                    'img' : $(this).attr('src'),
+                    'url' : url
+                });
+            });
+        }); 
+        parseLinks(links, 0);
+    }
+
+    function parseLinks(links, i){
+        if (links.length > i){
+            imgSrc = links[i].img;
+
+            link = $('<a href="' + links[i].url + '"></a>')
+                .click(function(evt){
+                    //evt.preventDefault();
+                });
+
+            image = $('<img id="img-' + i + '" src="' + imgSrc +'" />')
+                .css({'opacity': 0})
+                .load(function(evt){
+                    $('#img-' + i)
+                        .animate({'opacity': 1}, 120)
+                    parseLinks(links, i+1); 
+                }).error(function(evt){
+                    parseLinks(links, i+1);
+                });
+
+            container = $('<div class="image"></div>');
+            $('#list').append(container.append(link.append(image)));
+        } else {
+            links = [];
+            var moar = $('<div class="image moar"><a href="javascript:void(0)">Moar</a></div>')
+                .click(function(evt){
+                    evt.preventDefault()
+                    currentPage++;
+                    loadPage(currentPage);
+                });
+            $('#list').append(moar);
+        }
+    }
+
+
+</script>
+
+<style>
+
+#list div.image {
+    display:inline;
+    height: 128px;
+    width: 128px;
+    overflow: hidden;
+    float: left;
+    padding: 5px;
+}
+
+#list div.image img{
+    max-height: 100%;
+    max-width: 100%;
+}
+
+#list div.image.first{
+    display:none;
+}
+
+#list div.image.moar{
+    font-size: 20px;
+    text-align: center;
+}
+
+</style>
+</head>
+<body>
+<ul id="list">
+    <div class="image first"></div>
+</ul>
+</body>
+</html>
+
