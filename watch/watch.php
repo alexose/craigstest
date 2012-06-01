@@ -4,6 +4,7 @@
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
+// process url into usable query
 $inputArray = explode("/", $_SERVER['REQUEST_URI']);
 $string = "";
 foreach ($inputArray as $i=>$elem){
@@ -13,17 +14,25 @@ foreach ($inputArray as $i=>$elem){
         $string .= "/" . $elem;
 }
 
-print $string;
-
 include_once('../indexer.class');
 
 // defaults
 $pageURL = "http://www.firstrow.tv";
-$xpath = "/html/body/div[@id='accordion']/div/a/@href";
+$xpath = "//iframe[@id='player']/@src";
+
+$query = $pageURL . $string;
 
 // get results!
 $indexer = new Indexer;
-$links = $indexer->getPages($pageURL, $xpath);
 
+
+
+print $query . "    ";
+print $xpath;
+$links = $indexer->getPages($query, $xpath);
+
+foreach ($links as $link){
+    print '<a href="http://alexose.com/sportz' . $link . '">' . $link . '</a><br/>';
+}
 
 ?>
