@@ -3,7 +3,29 @@ var base = "?url=http://boston.craigslist.org/bia/";
 var currentPage = 0;
 var rows = 0;
 var cols = 0;
-var queue = [];
+
+Craigstest = {};
+Craigstest.queue = [];
+
+Craigstest.broadcast = function(evt) {
+    var a = []; for(var i=0; i<arguments.length; i++) a.push(arguments[i]);
+    var args = a.slice(1);
+    $(document).trigger(evt, args);
+    //console.log('Broadcast: '+evt);
+}
+
+Craigstest.listen = function(evts, callback, scope) {
+    if(evts instanceof Array)
+        evts = evts.join(" ");
+    if(callback instanceof Function) {
+        if(scope) {
+            $(document).bind(evts, $.proxy(callback, scope));
+        } else {
+            $(document).bind(evts, callback);
+        }
+    }
+    return true;
+}
 
 $(document).ready(function(){
     pageWidth = $(window).innerWidth();
@@ -12,8 +34,8 @@ $(document).ready(function(){
     cellHeight = $('#list div.first').outerHeight() + 5;
 
     // How many rows and columns?
-    rows = Math.round(pageWidth / cellWidth);
-    cols = Math.round(pageHeight/ cellHeight); 
+    cols = Math.round(pageWidth / cellWidth);
+    rows = Math.round(pageHeight/ cellHeight); 
 
     loadPage(currentPage);
 
@@ -43,7 +65,6 @@ function loadPage(pageNum){
 
 function parseHTML(html){
     pages = [];
-    console.log(html); 
     $(html).find('p.row a').each(function(){
         url = $(this).attr('href');
         pages.push({'url': url});
@@ -72,33 +93,42 @@ function getLinks(html, url){
     $(html).find('img').each(function(){
         links.push({
             'id': 0,
-            'img': $(this).attr('src'),
+            'src': $(this).attr('src'),
             'url': "null"
         });
     });
+    return links;
 }
 
 function queueLinks(links){
     // queues links and sends them to the parser, one row at a time
-    queue.push(links);
-
-    var toParse = [];
-    while(queue > rows){
-        for (var i; i<rows.length; i++){
-            toParse.push(queue.shift);
-        }
+    for (var i in links){
+        link = links[i];
+        Craigstest.queue.push(link);
     }
 
-    parseLinks(toParse, 0);
+    if (Craigstest.queue.length > cols){
+        // If we have enough to fill out a row, let's rock.
+        var images = [];
+        for (var i; i<cols; i++)
+            images.push(Craigstest.queue.shift());
+        addImages(images, 0);
+    }
+
 }
+    
+Craigstest.listen('image:added', function(evt, images){
+    console.log(images);
+}, this);
 
-function parseLinks(links, i){
+function addImages(images, i){
     // Takes an array of image srcs and puts them in the DOM
+    // We chain the loading process
+    
+    if (images.length > i){
+        imgSrc = images[i].src;
 
-    if (links.length > i){
-        imgSrc = links[i].img;
-
-        link = $('<a href="' + links[i].url + '"></a>')
+        link = $('<a href="' + images[i].url + '"></a>')
             .click(function(evt){
                 //evt.preventDefault();
             });
@@ -107,22 +137,15 @@ function parseLinks(links, i){
             .css({'opacity': 0})
             .load(function(evt){
                 $('#img-' + i)
-                    .animate({'opacity': 1}, 150)
-                parseLinks(links, i+1); 
+                    .animate({'opacity': 1})
+                Craigstest.broadcast('image:added', images); 
+                addImages(images, i+1);
             }).error(function(evt){
-                parseLinks(links, i+1);
+                //$(evt.targetElement).remove();
+                addImages(images, i+1);
             });
 
         container = $('<div class="image"></div>');
         $('#list').append(container.append(link.append(image)));
-    } else {
-        links = [];
-        var moar = $('<div class="image moar"><a href="javascript:void(0)">Moar</a></div>')
-            .click(function(evt){
-                evt.preventDefault()
-                currentPage++;
-                loadPage(currentPage);
-            });
-        $('#list').append(moar);
     }
 }
