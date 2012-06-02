@@ -1,3 +1,0 @@
-# redirect all requests to index to allow for routes
-RewriteEngine on
-RewriteRule .* watch.php
