@@ -1,4 +1,5 @@
 var proxyUrl = "proxy.php";
+var base = "?url=http://boston.craigslist.org/bia/";
 var currentPage = 0;
 var rows = 0;
 var cols = 0;
@@ -18,7 +19,7 @@ $(document).ready(function(){
 
     $(window).scroll(function() {
        if($(window).scrollTop() + $(window).height() == $(document).height()) {
-            // 100 Results per page
+            // 100 Results per page.  Look out.
             loadPage(currentPage);
        }
     });
@@ -26,7 +27,7 @@ $(document).ready(function(){
 });
 
 function loadPage(pageNum){
-    var args = (pageNum > 0) ? "?page=" + pageNum * 100 : "";
+    var args = (pageNum > 0) ? base + "index" + pageNum * 100 + ".html" : base;
 
     $('#list .image.moar').remove();
 
@@ -44,12 +45,7 @@ function parseHTML(html){
     pages = [];
     $(html).find('p.row a').each(function(){
         url = $(this).attr('href');
-        arr = url.split('/');
-        if (arr[5]){
-            id = arr[5].split('.')[0];
-            pages.push({
-                'id': id,
-            });
+        pages.push({'id': id});
         }
     }); 
     parsePages(pages, 0);
@@ -57,7 +53,7 @@ function parseHTML(html){
 
 function parsePages(pages, i){
     if (i < 10){
-        args = '?id=' + pages[i].id;
+        args = "?url=" + pages[i].url;
         $.ajax({
             url: proxyUrl + args,
             type: "GET",
