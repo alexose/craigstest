@@ -26,48 +26,18 @@ $(document).ready(function(){
 });
 
 function loadPage(pageNum){
-    var args;
-
-    if (pageNum == 0){
-        // The first time through, we'll use the RSS feed.  It's way faster.
-        args = "";
-        datatype = 'xml';
-        parseFunction = parseXML;
-    } else {
-        // Otherwise, we'll have to parse HTML.  Ugh
-        args = "?page=" + pageNum * 100;
-        datatype = 'html';
-        parseFunction = parseHTML;
-    }
+    var args = (pageNum > 0) ? "?page=" + pageNum * 100 : "";
 
     $('#list .image.moar').remove();
 
     $.ajax({
         url: proxyUrl + args,
         type: "GET",
-        dataType: datatype, 
-        success: parseFunction
+        dataType: "html",
+        success: parseHTML 
     })
 
     currentPage++;
-}
-
-function parseXML(xml){
-    var links = [];
-    $(xml).find("description").each(function(){
-        console.log($(this));
-        url = $(this).prev().text();
-        raw = $(this).text();
-        markup = "<div>" + $.trim(raw) + "</div>";
-        $(markup).find('img').each(function(){
-            links.push({
-                'id': 0, 
-                'img' : $(this).attr('src'),
-                'url' : url
-            });
-        });
-    }); 
-    queueLinks(links, 0);
 }
 
 function parseHTML(html){
@@ -86,7 +56,7 @@ function parseHTML(html){
 }
 
 function parsePages(pages, i){
-    if (pages.length > i){
+    if (i < 10){
         args = '?id=' + pages[i].id;
         $.ajax({
             url: proxyUrl + args,
@@ -103,6 +73,7 @@ function parsePages(pages, i){
 
 function getLinks(html, url){
     links = [];
+    console.log(html);
     $(html).find('img').each(function(){
         links.push({
             'id': 0,
@@ -114,7 +85,6 @@ function getLinks(html, url){
 
 function queueLinks(links){
     // queues links and sends them to the parser, one row at a time
-    console.log(links);
     queue.push(links);
 
     var toParse = [];
