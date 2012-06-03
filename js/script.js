@@ -83,7 +83,7 @@ function parsePages(pages, i){
             type: "GET",
             dataType: "html",
             success: function(html){
-                links = getLinks(html);
+                links = getLinks(html, pages[i].url);
                 queueLinks(links);
                 parsePages(pages, i+1);
             }
@@ -99,7 +99,7 @@ function getLinks(html, url){
         links.push({
             'id': id,
             'src': $(this).attr('src'),
-            'url': "null"
+            'url': url
         });
         id++;
     });
@@ -119,9 +119,8 @@ Craigstest.listen('image:loaded', function(evt, image){
     image.animate({'opacity': 1});
     if (Craigstest.queue.length >= cols)
         addImage();
-    else{
+    else
         Craigstest.running = false;
-    }
 }, this);
 
 function addImage(){
@@ -139,7 +138,6 @@ function addImage(){
         .load(function(evt){
             Craigstest.broadcast('image:loaded', image); 
         }).error(function(evt){
-            //$(evt.targetElement).remove();
             Craigstest.broadcast('image:loaded', image); 
         });
 
