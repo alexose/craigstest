@@ -1,8 +1,11 @@
 var proxyUrl = "proxy.php";
-var base = "?url=http://boston.craigslist.org/bia/";
 var rows = 0;
 var cols = 0;
 var id   = 0;
+var sec  = window.location.hash ? window.location.hash.substr(1,4) : "bik";
+var base = "?url=http://boston.craigslist.org/" + sec + "/";
+
+console.log(sec);
 
 Craigstest = {};
 Craigstest.queue  = [];
@@ -68,9 +71,9 @@ function fillQueue(){
 
 function parseHTML(html){
     pages = [];
-    $(html).find('p.row a').each(function(){
+    $(html).find('p a').each(function(){
         url = $(this).attr('href');
-        if (url != "/bik/") pages.push({'url': url});
+        if (url != "/" + sec + "/") pages.push({'url': url});
     }); 
     parsePages(pages, 0);
 }
