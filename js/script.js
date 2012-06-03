@@ -68,7 +68,6 @@ function fillQueue(){
 
 function parseHTML(html){
     pages = [];
-    console.log(html);
     $(html).find('p.row a').each(function(){
         url = $(this).attr('href');
         if (url != "/bik/") pages.push({'url': url});
@@ -120,8 +119,13 @@ Craigstest.listen('image:loaded', function(evt, image){
     image.animate({'opacity': 1});
     if (Craigstest.queue.length >= cols)
         addImage();
-    else
+    else{
         Craigstest.running = false;
+        $('img').each(function(){
+            if ($(this).css('opacity') == 0)
+                $(this).animate({'opacity': 1});
+        });
+    }
 }, this);
 
 function addImage(){
