@@ -1,13 +1,13 @@
 var proxyUrl = "proxy.php";
 var base = "?url=http://boston.craigslist.org/bia/";
-var currentPage = 0;
 var rows = 0;
 var cols = 0;
+var id   = 0;
 
 Craigstest = {};
 Craigstest.queue  = [];
-Craigstest.images = [];
 Craigstest.running= false;
+Craigstest.currentPage = 0;
 
 Craigstest.broadcast = function(evt) {
     var a = []; for(var i=0; i<arguments.length; i++) a.push(arguments[i]);
@@ -39,19 +39,20 @@ $(document).ready(function(){
     cols = Math.round(pageWidth / cellWidth);
     rows = Math.round(pageHeight/ cellHeight); 
 
-    loadPage(currentPage);
+    fillQueue();
 
     $(window).scroll(function() {
        if($(window).scrollTop() + $(window).height() == $(document).height()) {
             // 100 Results per page.  Look out.
-            loadPage(currentPage);
+            fillQueue();
        }
     });
 
 });
 
-function loadPage(pageNum){
-    var args = (pageNum > 0) ? base + "index" + pageNum * 100 + ".html" : base;
+function fillQueue(){
+    var page = Craigstest.currentPage;
+    var args = (page > 0) ? base + "index" + page * 100 + ".html" : base;
 
     $('#list .image.moar').remove();
 
@@ -62,7 +63,7 @@ function loadPage(pageNum){
         success: parseHTML 
     })
 
-    currentPage++;
+    Craigstest.currentPage++;
 }
 
 function parseHTML(html){
@@ -75,7 +76,7 @@ function parseHTML(html){
 }
 
 function parsePages(pages, i){
-    if (i < 10){
+    if (i < 100){
         args = "?url=" + pages[i].url;
         $.ajax({
             url: proxyUrl + args,
@@ -93,67 +94,55 @@ function parsePages(pages, i){
 function getLinks(html, url){
     links = [];
     $(html).find('img').each(function(){
+        var src = $(this).attr('src');
+        if (src.split('/')[3] == "thumb") return;
         links.push({
-            'id': 0,
+            'id': id,
             'src': $(this).attr('src'),
             'url': "null"
         });
+        id++;
     });
     return links;
 }
 
 function queueLinks(links){
-    // queues links and sends them to the parser, one row at a time
     for (var i in links){
         link = links[i];
         Craigstest.queue.push(link);
     }
-    Craigstest.broadcast('queue:added', Craigstest.queue); 
+    if (Craigstest.queue.length >= cols)
+        addImage();
 }
-    
-Craigstest.listen('queue:added', function(evt, queue){
-    // If we have enough to fill out a row, let's rock.
-    var images = [];
-    while (Craigstest.queue.length > cols){
-        console.log(Craigstest.queue.length);
-        for (var i; i<cols; i++)
-            Craigstest.images.push(Craigstest.queue.shift());
-    }
 
-}, this);
-
-Craigstest.listen('image:added', function(evt, images){
-    console.log(images);
-}, this);
-
-function addImages(){
-    if (Craigstest.running) return;
-    
-    if (Craigstest.images.length > i){
-        console.log(Craigstest.images.length);
-        Craigstest.running = true;
-        imgSrc = images[i].src;
-
-        link = $('<a href="' + images[i].url + '"></a>')
-            .click(function(evt){
-                //evt.preventDefault();
-            });
-
-        image = $('<img id="img-' + i + '" src="' + imgSrc +'" />')
-            .css({'opacity': 0})
-            .load(function(evt){
-                $('#img-' + i)
-                    .animate({'opacity': 1})
-                Craigstest.broadcast('image:added', images); 
-                addImages();
-            }).error(function(evt){
-                //$(evt.targetElement).remove();
-                addImages();
-            });
-
-        container = $('<div class="image"></div>');
-        $('#list').append(container.append(link.append(image)));
-    } else {
+Craigstest.listen('image:loaded', function(evt, image){
+    image.animate({'opacity': 1});
+    if (Craigstest.queue.length >= cols)
+        addImage();
+    else{
         Craigstest.running = false;
     }
+}, this);
+
+function addImage(){
+    Craigstest.running = true;
+    
+    img = Craigstest.queue.shift();
+
+    link = $('<a href="' + img.url + '"></a>')
+        .click(function(evt){
+            //evt.preventDefault();
+        });
+
+    image = $('<img id="img-' + img.id + '" src="' + img.src +'" />')
+        .css({'opacity': 0})
+        .load(function(evt){
+            Craigstest.broadcast('image:loaded', image); 
+        }).error(function(evt){
+            //$(evt.targetElement).remove();
+            Craigstest.broadcast('image:loaded', image); 
+        });
+
+    container = $('<div class="image"></div>');
+    $('#list').append(container.append(link.append(image)));
 }
