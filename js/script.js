@@ -5,7 +5,9 @@ var rows = 0;
 var cols = 0;
 
 Craigstest = {};
-Craigstest.queue = [];
+Craigstest.queue  = [];
+Craigstest.images = [];
+Craigstest.running= false;
 
 Craigstest.broadcast = function(evt) {
     var a = []; for(var i=0; i<arguments.length; i++) a.push(arguments[i]);
@@ -106,26 +108,30 @@ function queueLinks(links){
         link = links[i];
         Craigstest.queue.push(link);
     }
-
-    if (Craigstest.queue.length > cols){
-        // If we have enough to fill out a row, let's rock.
-        var images = [];
-        for (var i; i<cols; i++)
-            images.push(Craigstest.queue.shift());
-        addImages(images, 0);
-    }
-
+    Craigstest.broadcast('queue:added', Craigstest.queue); 
 }
     
+Craigstest.listen('queue:added', function(evt, queue){
+    // If we have enough to fill out a row, let's rock.
+    var images = [];
+    while (Craigstest.queue.length > cols){
+        console.log(Craigstest.queue.length);
+        for (var i; i<cols; i++)
+            Craigstest.images.push(Craigstest.queue.shift());
+    }
+
+}, this);
+
 Craigstest.listen('image:added', function(evt, images){
     console.log(images);
 }, this);
 
-function addImages(images, i){
-    // Takes an array of image srcs and puts them in the DOM
-    // We chain the loading process
+function addImages(){
+    if (Craigstest.running) return;
     
-    if (images.length > i){
+    if (Craigstest.images.length > i){
+        console.log(Craigstest.images.length);
+        Craigstest.running = true;
         imgSrc = images[i].src;
 
         link = $('<a href="' + images[i].url + '"></a>')
@@ -139,13 +145,15 @@ function addImages(images, i){
                 $('#img-' + i)
                     .animate({'opacity': 1})
                 Craigstest.broadcast('image:added', images); 
-                addImages(images, i+1);
+                addImages();
             }).error(function(evt){
                 //$(evt.targetElement).remove();
-                addImages(images, i+1);
+                addImages();
             });
 
         container = $('<div class="image"></div>');
         $('#list').append(container.append(link.append(image)));
+    } else {
+        Craigstest.running = false;
     }
 }
