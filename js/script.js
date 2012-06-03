@@ -68,9 +68,10 @@ function fillQueue(){
 
 function parseHTML(html){
     pages = [];
+    console.log(html);
     $(html).find('p.row a').each(function(){
         url = $(this).attr('href');
-        pages.push({'url': url});
+        if (url != "/bik/") pages.push({'url': url});
     }); 
     parsePages(pages, 0);
 }
